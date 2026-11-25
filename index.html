@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Bonds to 10 - AI Learning Game</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #172554, #2563eb);
+  margin: 0; padding: 20px; min-height: 100vh; color: #172554;
+}
+.container {
+  max-width: 850px; margin: auto; background: white; padding: 25px;
+  border-radius: 18px; box-shadow: 0 10px 30px #0004;
+}
+h1, .subtitle { text-align: center; }
+h1 { color: #1d4ed8; }
+.subtitle { color: #64748b; }
+.scores { display: flex; gap: 12px; margin: 20px 0; }
+.score { flex: 1; text-align: center; padding: 15px; border-radius: 12px; color: white; }
+.human { background: #15803d; }
+.machine { background: #2563eb; }
+.score h2 { margin: 5px; font-size: 30px; }
+.game-box { background: #eff6ff; padding: 25px; border-radius: 15px; text-align: center; }
+.question { font-size: 42px; font-weight: bold; margin: 20px; }
+.prediction { font-size: 19px; margin: 15px; }
+input {
+  width: 120px; padding: 12px; font-size: 22px; text-align: center;
+  border: 2px solid #2563eb; border-radius: 8px;
+}
+button {
+  padding: 12px 20px; margin: 7px; border: none; border-radius: 8px;
+  background: #2563eb; color: white; font-size: 16px; cursor: pointer;
+}
+button:hover { opacity: .85; }
+button:disabled { background: #94a3b8; cursor: not-allowed; }
+.reset { background: #dc2626; }
+.message { font-size: 18px; font-weight: bold; min-height: 30px; margin-top: 15px; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+th, td { padding: 10px; border: 1px solid #cbd5e1; text-align: center; }
+th { background: #dbeafe; }
+.section { margin-top: 25px; }
+@media(max-width: 550px) {
+  .container { padding: 15px; }
+  .question { font-size: 32px; }
+  table { font-size: 12px; }
+  th, td { padding: 7px 3px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🤖 Number Bonds to 10</h1>
+  <p class="subtitle">Train a machine to learn its number bonds!</p>
+
+  <div class="scores">
+    <div class="score human"><p>Human Score</p><h2 id="humanScore">0</h2></div>
+    <div class="score machine"><p>Machine Score</p><h2 id="machineScore">0</h2></div>
+  </div>
+
+  <div class="game-box">
+    <h2 id="round">Round 1</h2>
+    <div class="question" id="question">0 + ? = 10</div>
+    <div class="prediction" id="prediction">Machine prediction: -</div>
+    <p>Enter your answer (1–10)</p>
+    <input type="number" id="answer" min="1" max="10" placeholder="?" inputmode="numeric">
+    <br>
+    <button id="submitBtn" onclick="checkAnswer()">Submit Answer</button>
+    <button onclick="nextQuestion()">Next Question</button>
+    <div class="message" id="message">Let's start training!</div>
+  </div>
+
+  <div class="section">
+    <h3>📊 Machine Learning Data</h3>
+    <p>Watch how the machine updates its learned values.</p>
+    <table>
+      <thead><tr><th>Number</th><th>Times Appeared</th><th>Correct Bond</th><th>Learned Value</th></tr></thead>
+      <tbody id="dataTable"></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>⚙️ Game Controls</h3>
+    <button class="reset" onclick="resetGame()">Reset Game</button>
+  </div>
+</div>
+
+<script>
+// Previously learned values supplied for this game.
+const initialBonds = [9.375, 8.000, 7.375, 6.000, 5.625, 5.000, 4.125, 3.500, 2.375, 2.000];
+const initialAppearances = [3, 2, 3, 2, 3, 2, 3, 2, 3, 2];
+
+let bonds = [...initialBonds];
+let appearances = [...initialAppearances];
+let humanWins = 0;
+let machineWins = 0;
+let turns = 0;
+let number;
+let machineAnswer;
+let answered = true;
+
+function startGame() {
+  number = Math.floor(Math.random() * 10);
+  machineAnswer = Math.round(bonds[number]);
+  answered = false;
+
+  document.getElementById("question").innerText = number + " + ? = 10";
+  document.getElementById("prediction").innerText = "Machine prediction: " + machineAnswer;
+  document.getElementById("round").innerText = "Round " + (turns + 1);
+  document.getElementById("answer").value = "";
+  document.getElementById("answer").disabled = false;
+  document.getElementById("submitBtn").disabled = false;
+  document.getElementById("message").innerText = "Your turn! Enter the correct bond.";
+  document.getElementById("message").style.color = "#172554";
+  document.getElementById("answer").focus();
+}
+
+function checkAnswer() {
+  if (answered) return;
+
+  const input = document.getElementById("answer").value;
+  if (input === "") {
+    document.getElementById("message").innerText = "Please enter an answer!";
+    return;
+  }
+
+  const humanAnswer = Number(input);
+  if (!Number.isInteger(humanAnswer) || humanAnswer < 1 || humanAnswer > 10) {
+    document.getElementById("message").innerText = "Enter a whole number from 1 to 10.";
+    return;
+  }
+
+  answered = true;
+  turns++;
+  appearances[number]++;
+
+  if (number + machineAnswer === 10) machineWins++;
+
+  if (number + humanAnswer === 10) {
+    humanWins++;
+    // Same averaging-based learning rule as the Micro:bit Python program.
+    bonds[number] = (bonds[number] + humanAnswer) / 2;
+    document.getElementById("message").innerText = "✅ Correct! Machine learned from your answer.";
+    document.getElementById("message").style.color = "green";
+  } else {
+    document.getElementById("message").innerText = "❌ Wrong! Correct answer is " + (10 - number);
+    document.getElementById("message").style.color = "red";
+  }
+
+  document.getElementById("answer").disabled = true;
+  document.getElementById("submitBtn").disabled = true;
+  updateScores();
+  updateTable();
+}
+
+function nextQuestion() {
+  if (!answered) {
+    document.getElementById("message").innerText = "Please submit your answer first.";
+    return;
+  }
+  startGame();
+}
+
+function updateScores() {
+  document.getElementById("humanScore").innerText = humanWins;
+  document.getElementById("machineScore").innerText = machineWins;
+}
+
+function updateTable() {
+  const table = document.getElementById("dataTable");
+  table.innerHTML = "";
+  for (let i = 0; i < 10; i++) {
+    const row = table.insertRow();
+    row.insertCell(0).innerText = i;
+    row.insertCell(1).innerText = appearances[i];
+    row.insertCell(2).innerText = 10 - i;
+    row.insertCell(3).innerText = bonds[i].toFixed(4);
+  }
+}
+
+function resetGame() {
+  bonds = [...initialBonds];
+  appearances = [...initialAppearances];
+  humanWins = 0;
+  machineWins = 0;
+  turns = 0;
+  updateScores();
+  updateTable();
+  startGame();
+  document.getElementById("message").innerText = "Game reset! Start training again.";
+}
+
+document.getElementById("answer").addEventListener("keydown", function(event) {
+  if (event.key === "Enter") checkAnswer();
+});
+
+updateTable();
+startGame();
+</script>
+</body>
+</html>
